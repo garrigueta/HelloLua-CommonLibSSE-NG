@@ -1,0 +1,6 @@
+[submodule "ext/lua"]
+	path = ext/lua
+	url = https://github.com/lua/lua.git
+[submodule "ext/skse64"]
+	path = ext/skse64
+	url = https://github.com/ianpatt/skse64
