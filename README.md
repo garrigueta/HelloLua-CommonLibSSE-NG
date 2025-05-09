@@ -36,8 +36,8 @@ The project serves as a practical example for Skyrim modders who want to incorpo
 This project uses Git submodules to include the Lua source code directly. After cloning the repository, you need to initialize and update the submodules:
 
 ```
-git clone https://your-repository-url/HelloLua-using-CommonLibSSE-NG.git
-cd HelloLua-using-CommonLibSSE-NG
+git clone https://your-repository-url/HelloLua-CommonLibSSE-NG.git
+cd HelloLua-CommonLibSSE-NG
 git submodule init
 git submodule update
 ```
@@ -54,10 +54,13 @@ This project uses CMake and vcpkg for dependency management:
 
 1. Make sure you've initialized the Git submodules as described above
 2. Configure the project with CMake:
+
 ```
 cmake -B build -S . --preset=release
 ```
+
 3. Build the project:
+
 ```
 cmake --build build --config Release
 ```
