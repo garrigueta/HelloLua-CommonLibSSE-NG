@@ -1,0 +1,5 @@
+{
+    "env": {
+      "myIncludePath": ["${workspaceFolder}/ext/skse64", "${workspaceFolder}/ext/lua"]
+    }
+}
