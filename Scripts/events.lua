@@ -140,24 +140,9 @@ function Events.initialize()
     -- Register native event handlers
     RegisterForOnUpdate(onUpdateHandler)
     
-    -- Hook game events to our event system
-    HookGameEvent("OnGameLoad", function()
-        Events.trigger("onGameLoad")
-    end)
-    
-    HookGameEvent("OnEquip", function(actor, item)
-        Events.trigger("onEquip", actor, item)
-    end)
-    
-    HookGameEvent("OnMenuOpen", function(menuName)
-        Events.trigger("onMenuOpen", menuName)
-    end)
-    
-    HookGameEvent("OnMenuClose", function(menuName)
-        Events.trigger("onMenuClose", menuName)
-    end)
-    
-    Log("Events system initialized")
+    -- For now, we only have the onUpdate event working
+    -- The other events need different registration methods
+    Log("Events system initialized with onUpdate event")
     return true
 end
 

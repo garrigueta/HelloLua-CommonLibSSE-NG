@@ -182,30 +182,5 @@ if(DEFINED OUTPUT_FOLDER)
             VERBATIM
         )
     endforeach()
-    
-    # Create a special init.lua file that sets up the Lua package path to find modules
-    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/init.lua" 
-        "-- Auto-generated init.lua file for HelloLua\n"
-        "-- Sets up the Lua package path to find modules in the Scripts directory\n\n"
-        "local scriptPath = \"Data/SKSE/Plugins/Scripts/\"\n"
-        "package.path = scriptPath .. \"?.lua;\" .. scriptPath .. \"?/init.lua;\" .. package.path\n"
-        "package.cpath = scriptPath .. \"?.dll;\" .. package.cpath\n\n"
-        "-- Log that we've initialized the Lua environment\n"
-        "Log(\"HelloLua package paths initialized\")\n\n"
-        "-- Load the startup script if it exists\n"
-        "local success, err = pcall(require, \"startup\")\n"
-        "if not success then\n"
-        "    Log(\"Error loading startup script: \" .. tostring(err))\n"
-        "end\n"
-    )
-    
-    # Copy the init.lua file to the Scripts directory
-    add_custom_command(
-        TARGET "${PROJECT_NAME}"
-        POST_BUILD
-        COMMAND "${CMAKE_COMMAND}" -E copy_if_different 
-                "${CMAKE_CURRENT_BINARY_DIR}/init.lua"
-                "${SCRIPTS_FOLDER}/init.lua"
-        VERBATIM
-    )
+      # init.lua generation removed - package path handling is done in LuaManager.cpp
 endif()

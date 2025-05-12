@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 // Forward declare lua_State to avoid including lua.h in header
 struct lua_State;
@@ -24,6 +25,21 @@ namespace Sample {
         bool ExecuteString(const std::string& luaCode);
         bool RegisterFunction(const char* name, LuaCFunction func);
         void AddPackagePath(const std::string& path);
+        
+        // Dynamic module system
+        bool LoadModuleFromFile(const std::string& filePath);
+        int LoadModulesFromDirectory(const std::string& dirPath);
+        bool ReloadModules();
+        
+        // Function registry access
+        void RegisterNativeFunction(const std::string& name, const std::string& category, 
+                                   const std::string& description, LuaCFunction func);
+        
+        // Getter for Lua state
+        lua_State* GetLuaState() const { return m_luaState; }
+        
+        // List loaded modules
+        std::vector<std::string> GetLoadedModules() const;
 
     private:
         // The Lua state
@@ -31,9 +47,15 @@ namespace Sample {
         
         // Registered script paths
         std::vector<std::string> m_scriptPaths;
+        
+        // Module directories for auto-loading
+        std::vector<std::string> m_moduleDirectories;
 
         // Function registration
         void RegisterStandardFunctions();
         void RegisterGameFunctions();
+        
+        // Initialize the module API
+        void InitializeModuleSystem();
     };
 }

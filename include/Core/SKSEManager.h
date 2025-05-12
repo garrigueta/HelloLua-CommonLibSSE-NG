@@ -8,7 +8,9 @@ namespace Sample {
 #pragma warning(disable : 4251)
     /**
      * The SKSEManager class serves as the main interface between Lua scripts and the game.
-     * It encapsulates functionality for hit tracking, console output, and other SKSE-related features.
+     * It encapsulates functionality for console output and other SKSE-related features.
+     * 
+     * Note: This class has been stripped down to only include functionality relevant to the Lua module system.
      */
     class __declspec(dllexport) SKSEManager {
     public:
@@ -18,36 +20,12 @@ namespace Sample {
         [[nodiscard]] static SKSEManager* GetSingleton() noexcept;
 
         /**
-         * Tells the manager that a particular actor should have its hits tracked.
-         *
-         * @param actor The actor to track.
-         * @return true if actor is valid and was not already being tracked.
+         * Print a message to the Skyrim console.
+         * This function is used by Lua modules.
+         * 
+         * @param message The message to print.
          */
-        bool TrackActor(RE::Actor* actor);
-
-        /**
-         * Tells the manager that a particular actor should no longer have its hits tracked.
-         *
-         * @param actor The actor to untrack.
-         * @return true if actor is valid and was being tracked.
-         */
-        bool UntrackActor(RE::Actor* actor);
-
-        /**
-         * Increment the hit count for a tracked actor.
-         *
-         * @param target The actor whose hit count should be incremented.
-         * @param by The amount to increment by (defaults to 1).
-         */
-        void IncrementHitCount(RE::Actor* target, int32_t by = 1);
-
-        /**
-         * Gets the current hit count for an actor.
-         *
-         * @param target The actor whose hit count should be returned.
-         * @return Empty if the actor is not tracked, otherwise the number of hits.
-         */
-        std::optional<int32_t> GetHitCount(RE::Actor* target) const noexcept;
+        void PrintToConsole(const std::string& message);
 
         /**
          * Print a message to the Skyrim console.

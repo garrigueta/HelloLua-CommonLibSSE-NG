@@ -1,6 +1,9 @@
 #include "Core/PCH.h"
 #include "Core/LuaManager.h"
 #include "Core/SKSEManager.h"
+#include "Core/LuaNativeFunctions.h"
+#include "Core/LuaFunctionRegistry.h"
+#include "Core/LuaModuleLoader.h"
 
 // Include Lua headers with proper extern "C" block to ensure correct linkage
 extern "C" {
@@ -47,6 +50,9 @@ namespace Sample {
         // Open standard libraries
         luaL_openlibs(m_luaState);
 
+        // Initialize the module system before registering functions
+        InitializeModuleSystem();
+
         // Register our custom functions
         RegisterStandardFunctions();
         
@@ -64,6 +70,14 @@ namespace Sample {
         // Add script paths
         AddPackagePath(dataPath + pluginsPath + "?.lua");
         AddPackagePath(dataPath + pluginsPath + "?/init.lua");
+        
+        // Add module directories for auto-loading
+        m_moduleDirectories.push_back(dataPath + "SKSE/Plugins/LuaModules/");
+        
+        // Load modules from default directories
+        for (const auto& dir : m_moduleDirectories) {
+            LoadModulesFromDirectory(dir);
+        }
 
         SKSE::log::info("Lua environment initialized successfully");
         return true;
@@ -523,61 +537,162 @@ namespace Sample {
         return 1;
     }
 
+    // Define a struct to hold function information for registration
+    struct LuaFunctionInfo {
+        const char* name;
+        lua_CFunction func;
+    };
+
     void LuaManager::RegisterStandardFunctions() {
-        // Register utility functions
-        RegisterFunction("Log", LuaLog);
-        RegisterFunction("GetPlayerPosition", GetPlayerPosition);
+        // Create a HelloLua table to organize our functions
+        lua_newtable(m_luaState);
+        
+        // Define the standard functions we want to register
+        // Simplified to only include functions needed for the module system
+        const struct {
+            const char* name;
+            LuaCFunction func;
+            const char* description;
+        } standardFuncs[] = {
+            {"Log", LuaLog, "Log a message to the SKSE log"},
+            {"PrintToConsole", PrintToConsole, "Print a message to the Skyrim console"},
+            {nullptr, nullptr, nullptr} // Sentinel to mark end of array
+        };
+        
+        // Register standard functions with the native function registry and Lua
+        for (int i = 0; standardFuncs[i].name != nullptr; ++i) {
+            // Register with the native function system
+            RegisterNativeFunction(standardFuncs[i].name, "Standard", 
+                                   standardFuncs[i].description, standardFuncs[i].func);
+            
+            // Add to HelloLua table
+            lua_pushstring(m_luaState, standardFuncs[i].name);
+            lua_pushcfunction(m_luaState, standardFuncs[i].func);
+            lua_settable(m_luaState, -3);
+            
+            // Also register as global for backward compatibility
+            RegisterFunction(standardFuncs[i].name, standardFuncs[i].func);
+        }
+        
+        // Set the HelloLua table as a global variable
+        lua_setglobal(m_luaState, "HelloLua");
     }
     
     void LuaManager::RegisterGameFunctions() {
-        // Register hit counter related functions
-        RegisterFunction("TrackActor", TrackActor);
-        RegisterFunction("UntrackActor", UntrackActor);
-        RegisterFunction("IncrementHitCount", IncrementHitCount);
-        RegisterFunction("GetHitCount", GetHitCount);
-        RegisterFunction("PrintToConsole", PrintToConsole);
+        // Get the HelloLua table (create if it doesn't exist)
+        lua_getglobal(m_luaState, "HelloLua");
+        if (lua_isnil(m_luaState, -1)) {
+            lua_pop(m_luaState, 1);
+            lua_newtable(m_luaState);
+        }
         
-        // Actor Management
-        RegisterFunction("GetActorByID", GetActorByID);
-        RegisterFunction("IsActorValid", IsActorValid);
+        // Define all game functions we want to register with additional metadata
+        // Simplified to only include functions needed for the module system
+        const struct {
+            const char* name;
+            LuaCFunction func;
+            const char* category;
+            const char* description;
+        } gameFuncs[] = {
+            // Only include GetPlayerPosition as it's used in the example module
+            {"GetPlayerPosition", GetPlayerPosition, "Player", "Get the player's current position"},
+            
+            {nullptr, nullptr, nullptr, nullptr} // Sentinel to mark end of array
+        };
         
-        // Player functions
-        RegisterFunction("GetPlayer", GetPlayerActor);
+        // Register all functions in the table and as globals
+        for (int i = 0; gameFuncs[i].name != nullptr; ++i) {
+            // Register with the native function system
+            RegisterNativeFunction(gameFuncs[i].name, gameFuncs[i].category, 
+                                  gameFuncs[i].description, gameFuncs[i].func);
+            
+            // Add to HelloLua table
+            lua_pushstring(m_luaState, gameFuncs[i].name);
+            lua_pushcfunction(m_luaState, gameFuncs[i].func);
+            lua_settable(m_luaState, -3);
+            
+            // Also register as global for backward compatibility
+            RegisterFunction(gameFuncs[i].name, gameFuncs[i].func);
+        }
         
-        // NPC Management
-        RegisterFunction("SetActorValue", SetActorValue);
-        RegisterFunction("GetActorValue", GetActorValue);
+        // Set the HelloLua table as a global variable
+        lua_setglobal(m_luaState, "HelloLua");
+    }
+
+    // Initialize the module system
+    void LuaManager::InitializeModuleSystem() {
+        if (!m_luaState) {
+            SKSE::log::error("Cannot initialize module system: Lua state not initialized");
+            return;
+        }
+
+        // Apply any registered functions from the function registry
+        LuaFunctionRegistry::GetSingleton()->ApplyToLuaState(m_luaState);
+
+        SKSE::log::info("Lua module system initialized");
+    }
+
+    // Load a module from a file
+    bool LuaManager::LoadModuleFromFile(const std::string& filePath) {
+        if (!m_luaState) {
+            SKSE::log::error("Cannot load module: Lua state not initialized");
+            return false;
+        }
+
+        return LuaModuleLoader::GetSingleton()->LoadModuleFromFile(m_luaState, filePath);
+    }
+
+    // Load all modules from a directory
+    int LuaManager::LoadModulesFromDirectory(const std::string& dirPath) {
+        if (!m_luaState) {
+            SKSE::log::error("Cannot load modules: Lua state not initialized");
+            return 0;
+        }
+
+        return LuaModuleLoader::GetSingleton()->LoadModulesFromDirectory(m_luaState, dirPath);
+    }
+
+    // Reload all registered modules
+    bool LuaManager::ReloadModules() {
+        if (!m_luaState) {
+            SKSE::log::error("Cannot reload modules: Lua state not initialized");
+            return false;
+        }
+
+        // Get the list of loaded modules
+        auto loadedModules = LuaModuleLoader::GetSingleton()->GetLoadedModules();
         
-        // Equipment functions
-        RegisterFunction("EquipItem", EquipItem);
-        RegisterFunction("UnequipItem", UnequipItem);
+        // Close and reinitialize Lua
+        Close();
+        if (!Initialize()) {
+            SKSE::log::error("Failed to reinitialize Lua state during module reload");
+            return false;
+        }
         
-        // World interaction
-        RegisterFunction("FindClosestReference", FindClosestReference);
+        // Re-load all previously loaded modules
+        for (const auto& module : loadedModules) {
+            if (!LoadModuleFromFile(module)) {
+                SKSE::log::error("Failed to reload module: {}", module);
+            }
+        }
         
-        // Quest and game state
-        RegisterFunction("SetQuestStage", SetQuestStage);
-        RegisterFunction("GetQuestStage", GetQuestStage);
-        RegisterFunction("IsQuestCompleted", IsQuestCompleted);
+        return true;
+    }
+
+    // Register a native function
+    void LuaManager::RegisterNativeFunction(const std::string& name, const std::string& category, 
+                                          const std::string& description, LuaCFunction func) {
+        if (!func) {
+            SKSE::log::error("Cannot register null function: {}", name);
+            return;
+        }
         
-        // Weather and environment
-        RegisterFunction("GetCurrentWeather", GetCurrentWeather);
-        RegisterFunction("ForceWeather", ForceWeather);
-        
-        // UI functions
-        RegisterFunction("IsMenuOpen", IsMenuOpen);
-        RegisterFunction("OpenMenu", OpenMenu);
-        RegisterFunction("CloseMenu", CloseMenu);
-        
-        // Forms and objects
-        RegisterFunction("GetFormByID", GetFormByID);
-        RegisterFunction("GetFormByEditorID", GetFormByEditorID);
-        
-        // Utility functions
-        RegisterFunction("GetActorDistance", GetActorDistance);
-        RegisterFunction("GetFormName", GetFormName);
-        
-        // Register the update function
-        RegisterFunction("RegisterForOnUpdate", RegisterForOnUpdate);
+        // Register with the native function registry
+        LuaNativeFunctions::GetSingleton()->RegisterNativeFunction(name, category, description, func);
+    }
+
+    // Get the list of loaded modules
+    std::vector<std::string> LuaManager::GetLoadedModules() const {
+        return LuaModuleLoader::GetSingleton()->GetLoadedModules();
     }
 }
