@@ -105,11 +105,9 @@ add_commonlibsse_plugin(${PROJECT_NAME}
     SOURCES
         src/Main.cpp
         src/Core/Papyrus.cpp
-        src/Core/LuaManager.cpp
-        src/Core/SKSEManager.cpp
+        src/Core/LuaSKSEManager.cpp
         include/Core/Papyrus.h
-        include/Core/LuaManager.h
-        include/Core/SKSEManager.h
+        include/Core/LuaSKSEManager.h
 )
 
 # Add include directories

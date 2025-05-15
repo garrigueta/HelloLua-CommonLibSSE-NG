@@ -1,8 +1,7 @@
--- HelloLua Skyrim Plugin - Example Mod
+-- HelloLua Skyrim Plugin - Example Script
 -- This script runs when the game loads and demonstrates common modding tasks
 
--- Simply load our modules directly without package path modifications
--- CMake already handles the file placement correctly
+-- Load our utility libraries
 local Events = require("events")
 local Utils = require("utils")
 

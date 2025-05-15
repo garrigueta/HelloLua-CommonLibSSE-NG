@@ -1,10 +1,10 @@
 -- events.lua
 -- Event system for Skyrim Lua plugin
 
--- Create the events table that will be returned as a module
+-- Create the events table
 local Events = {}
 
--- Private variables (not exposed outside this module)
+-- Private variables
 local eventHandlers = {}  -- Table to store event handlers
 local timers = {}         -- Table to store timer information
 local nextTimerID = 1     -- For generating unique timer IDs
@@ -146,8 +146,8 @@ function Events.initialize()
     return true
 end
 
--- Log when module is loaded
-Log("Events module loaded")
+-- Log when events system is loaded
+Log("Events system loaded")
 
--- Return the Events table as our module
+-- Return the Events table
 return Events

@@ -1,6 +1,4 @@
-#include <Core/LuaManager.h>
-#include "Core/SKSEManager.h"
-
+#include <Core/LuaSKSEManager.h>
 #include <stddef.h>
 
 using namespace Sample;
@@ -34,22 +32,22 @@ namespace {
     }
 
     /**
-     * Initialize the Lua module system.
+     * Initialize the Lua system.
      */
     void InitializeLua() {
-        log::trace("Initializing Lua module system...");
-        if (auto* luaManager = Sample::LuaManager::GetSingleton()) {
+        log::trace("Initializing Lua system...");
+        if (auto* luaManager = Sample::LuaSKSEManager::GetSingleton()) {
             if (luaManager->Initialize()) {
-                log::info("Lua module system initialized successfully");
+                log::info("Lua system initialized successfully");
                 
-                // Execute our test modules script to demonstrate the module system
-                if (luaManager->ExecuteScript("test_modules.lua")) {
-                    log::info("Successfully executed test modules script");
+                // Execute startup script
+                if (luaManager->ExecuteScript("startup.lua")) {
+                    log::info("Successfully executed startup script");
                 } else {
-                    log::warn("Error executing test modules script");
+                    log::warn("Error executing startup script");
                 }
             } else {
-                log::error("Failed to initialize Lua module system");
+                log::error("Failed to initialize Lua system");
             }
         }
     }
@@ -75,8 +73,8 @@ namespace {
 }
 
 /**
- * Entry point for the Lua Module System plugin.
- * This plugin provides a dynamic way to register and use Lua functions in Skyrim.
+ * Entry point for the HelloLua plugin.
+ * This plugin provides a way to run Lua scripts in Skyrim.
  */
 SKSEPluginLoad(const LoadInterface* skse) {
     InitializeLogging();
@@ -86,6 +84,19 @@ SKSEPluginLoad(const LoadInterface* skse) {
     log::info("{} {} is loading...", plugin->GetName(), version);
 
     Init(skse);
+    
+    // Register serialization callbacks
+    auto* serialization = GetSerializationInterface();
+    if (serialization) {
+        // Use a CRC32 hash of the plugin name as the ID since GetGUID is not available in this version
+        const auto pluginName = plugin->GetName();
+        const uint32_t pluginID = static_cast<uint32_t>(SKSE::HashUtil::CRC32(pluginName));
+        serialization->SetUniqueID(pluginID);
+        serialization->SetRevertCallback(Sample::LuaSKSEManager::OnRevert);
+        serialization->SetSaveCallback(Sample::LuaSKSEManager::OnGameSaved);
+        serialization->SetLoadCallback(Sample::LuaSKSEManager::OnGameLoaded);
+    }
+
     InitializeMessaging();
 
     log::info("{} has finished loading.", plugin->GetName());

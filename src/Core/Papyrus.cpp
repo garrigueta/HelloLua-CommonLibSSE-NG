@@ -1,6 +1,5 @@
 #include "Core/Papyrus.h"
-
-#include <Core/SKSEManager.h>
+#include "Core/LuaSKSEManager.h"
 
 using namespace Sample;
 using namespace RE;
@@ -47,11 +46,11 @@ namespace {
     // string), and the primitive types are converted to <code>bool</code>, <code>int</code>, and <code>float</code>.
 
     bool StartCounting(StaticFunctionTag*, Actor* actor) {
-        return SKSEManager::GetSingleton()->TrackActor(actor);
+        return LuaSKSEManager::GetSingleton()->TrackActor(actor);
     }
 
     bool StopCounting(StaticFunctionTag*, Actor* actor) {
-        return SKSEManager::GetSingleton()->UntrackActor(actor);
+        return LuaSKSEManager::GetSingleton()->UntrackActor(actor);
     }
 
     int32_t GetTotalHitCounters(StaticFunctionTag*) {
@@ -60,7 +59,7 @@ namespace {
 
     void Increment(StaticFunctionTag*, Actor* actor, int32_t by) {
         if (actor) {
-            SKSEManager::GetSingleton()->IncrementHitCount(actor, by);
+            LuaSKSEManager::GetSingleton()->IncrementHitCount(actor, by);
         }
     }
 
@@ -68,11 +67,11 @@ namespace {
         if (!actor) {
             return 0;
         }
-        return SKSEManager::GetSingleton()->GetHitCount(actor).value_or(0);
+        return LuaSKSEManager::GetSingleton()->GetHitCount(actor).value_or(0);
     }
 
     int32_t* PopulateHitData(Actor* target, char* unk0) {
-        SKSEManager::GetSingleton()->IncrementHitCount(target, 1);
+        LuaSKSEManager::GetSingleton()->IncrementHitCount(target, 1);
         return OriginalPopulateHitData(target, unk0);
     }
 }
